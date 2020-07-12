@@ -1,15 +1,43 @@
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 // eslint-disable-next-line import/no-dynamic-require
 const User = require(path.join('..', 'models', 'user'));
-const NotFoundError = new Error();
+const customError = new Error();
+const { NODE_ENV, JWT_SECRET } = process.env;
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        NODE_ENV === 'production' ? JWT_SECRET : 'say-dev-and-enter',
+        { expiresIn: '7d' },
+      );
+      res
+        .cookie('jwt', token, {
+          maxAge: 3600 * 1000 * 24 * 7,
+          httpOnly: true,
+          sameSite: true,
+        })
+        .end();
+    })
+    .catch((err) => {
+      res
+        .status(401)
+        .send({ message: err.message });
+    });
+};
 
 module.exports.getUserById = (req, res) => {
   User.findById(req.params._id)
     .then((user) => {
       if (!user) {
-        NotFoundError.message = 'Пользователя с указанным id не существует';
-        NotFoundError.name = 'NotFoundError';
-        throw NotFoundError;
+        customError.message = 'Пользователя с указанным id не существует';
+        customError.name = 'NotFoundError';
+        throw customError;
       } else {
         res.status(200).send({ data: user });
       }
@@ -34,13 +62,18 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  User.create({
-    name,
-    about,
-    avatar,
-  })
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
     .then((user) => res.send({
       message: `Пользователь ${name} успешно создан`,
       data: user,
