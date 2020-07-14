@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -25,7 +26,7 @@ async function start() {
     console.error(err);
   }
 }
-
+app.use(helmet());
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use('/', users);

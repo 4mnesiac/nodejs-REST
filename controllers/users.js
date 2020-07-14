@@ -22,7 +22,7 @@ module.exports.login = (req, res) => {
           httpOnly: true,
           sameSite: true,
         })
-        .end();
+        .send('Авторизация успешна!');
     })
     .catch((err) => {
       res
