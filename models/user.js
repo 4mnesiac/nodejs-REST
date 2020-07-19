@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const uniqueValidator = require('mongoose-unique-validator');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -18,13 +19,9 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: mongoose.Schema.Types.String,
     validate: {
-      validator(imgUrl) {
-        const regex = new RegExp(
-          // eslint-disable-next-line no-useless-escape
-          '^(https?:\/{2})?(([a-z0-9_-]{0,63})(([a-z0-9-]{1,128}\.)+([a-z]{2,11})))(\/(([0-9a-zA-Zа-яЁА-ЯЁ_.#%&?=-]+))*[.](jpg|jpeg|gif|png))$',
-        );
-        return regex.test(imgUrl);
-      },
+      validator: (url) => validator.isURL(url, {
+        allow_underscores: true, allow_trailing_dot: true, allow_protocol_relative_urls: true,
+      }),
     },
     required: true,
   },
@@ -37,7 +34,6 @@ const userSchema = new mongoose.Schema({
   password: {
     type: mongoose.Schema.Types.String,
     required: true,
-    unique: true,
     select: false,
   },
 });
@@ -59,4 +55,5 @@ userSchema.statics.findUserByCredentials = function (email, password) {
         });
     });
 };
+userSchema.plugin(uniqueValidator);
 module.exports = mongoose.model('user', userSchema);

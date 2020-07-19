@@ -32,4 +32,17 @@ const cardSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+cardSchema.statics.compareCardOwner = function (cardId, userId) {
+  return this.findById(cardId)
+    .then((card) => {
+      if (!card) {
+        return Promise.reject(new Error('Карточка не найдена'));
+      }
+      if (card.owner._id !== userId) {
+        return Promise.reject(new Error('Недостаточно прав'));
+      }
+      return card;
+    });
+};
+
 module.exports = mongoose.model('card', cardSchema);

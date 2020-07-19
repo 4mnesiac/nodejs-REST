@@ -1,6 +1,6 @@
 {
   "name": "sprint-14",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Практическая работа №14: Auth. Security",
   "repository": {
     "type": "git",
@@ -23,10 +23,10 @@
     "helmet": "^3.23.3",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.9.20",
+    "mongoose-unique-validator": "^2.0.3",
     "validator": "^13.1.1"
   },
   "devDependencies": {
-    "crypto": "^1.0.1",
     "eslint": "^7.2.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.21.2",

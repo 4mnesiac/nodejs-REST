@@ -4,16 +4,18 @@ const jwt = require('jsonwebtoken');
 // eslint-disable-next-line import/no-dynamic-require
 const User = require(path.join('..', 'models', 'user'));
 const customError = new Error();
-const { NODE_ENV, JWT_SECRET } = process.env;
+const { NODE_ENV, JWT_SECRET, JWT_DEV_SECRET } = process.env;
 
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
-
+  if (!email || !password) {
+    return res.status(400).send({ message: 'Не указан email или пароль' });
+  }
   return User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'say-dev-and-enter',
+        NODE_ENV === 'production' ? JWT_SECRET : JWT_DEV_SECRET,
         { expiresIn: '7d' },
       );
       res
@@ -22,7 +24,8 @@ module.exports.login = (req, res) => {
           httpOnly: true,
           sameSite: true,
         })
-        .send('Авторизация успешна!');
+        .status(200)
+        .send({ message: 'Авторизация успешна!' });
     })
     .catch((err) => {
       res
@@ -44,7 +47,7 @@ module.exports.getUserById = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: err.message });
+        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else if (err.name === 'NotFoundError') {
         res.status(404).send({ message: err.message });
       } else {
@@ -65,7 +68,9 @@ module.exports.createUser = (req, res) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-
+  if (!password) {
+    res.status(400).send({ message: 'user validation failed: password: Path `password` is required.' });
+  }
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
       name,
@@ -74,9 +79,14 @@ module.exports.createUser = (req, res) => {
       email,
       password: hash,
     }))
-    .then((user) => res.send({
+    .then(() => res.send({
       message: `Пользователь ${name} успешно создан`,
-      data: user,
+      data: {
+        name,
+        about,
+        avatar,
+        email,
+      },
     }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -102,8 +112,10 @@ module.exports.updateProfile = (req, res) => {
       });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
+      if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else {
         res.status(500).send({ message: err.message });
       }
@@ -125,8 +137,10 @@ module.exports.updateAvatar = (req, res) => {
       });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
+      if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else {
         res.status(500).send({ message: err.message });
       }

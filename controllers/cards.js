@@ -4,29 +4,36 @@ const Card = require(path.join('..', 'models', 'card'));
 const customError = new Error();
 
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params._id)
+  Card.findById(req.params)
     .then((card) => {
       if (!card) {
-        customError.message = 'Карточки с указанным id не существует или была удалена';
+        customError.message = 'Карточки с указанным id не существует';
         customError.name = 'NotFoundError';
         throw customError;
       }
-      if (card.owner._id !== req.user._id) {
+      if (card.owner.toString() !== req.user._id) {
         customError.message = 'Недостаточно прав';
         customError.name = 'AuthError';
         throw customError;
       }
-      res.status(200).send({ message: `Карточка ${card._id} пользователя ${card.owner} успешно удалена` });
+      return Card.findByIdAndRemove(req.params._id)
+        .then(() => {
+          res.status(200).send({ message: `Карточка ${card._id} успешно удалена` });
+        });
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: err.message });
-      } else if (err.name === 'NotFoundError') {
-        res.status(404).send({ message: err.message });
-      } else if (err.name === 'AuthError') {
-        res.status(401).send({ message: err.message });
-      } else {
-        res.status(500).send({ message: err.message });
+      switch (err.name) {
+        case 'CastError':
+          res.status(400).send({ message: `${err.name}: Ошибка запроса` });
+          break;
+        case 'NotFoundError':
+          res.status(404).send({ message: err.message });
+          break;
+        case 'AuthError':
+          res.status(401).send({ message: err.message });
+          break;
+        default:
+          res.status(500).send({ message: err.message });
       }
     });
 };
@@ -57,6 +64,8 @@ module.exports.createCard = (req, res) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
+      } else if (err.name === 'AuthError') {
+        res.status(401).send({ message: err.message });
       } else {
         res.status(500).send({ message: err.message });
       }
@@ -79,7 +88,7 @@ module.exports.likeCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: err.message });
+        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else if (err.name === 'NotFoundError') {
         res.status(404).send({ message: err.message });
       } else {
@@ -104,7 +113,7 @@ module.exports.dislikeCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: err.message });
+        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else if (err.name === 'NotFoundError') {
         res.status(404).send({ message: err.message });
       } else {
