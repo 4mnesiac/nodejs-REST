@@ -1,14 +1,15 @@
 /* eslint-disable no-console */
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+require('dotenv').config();
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const users = require('./routes/users');
 const cards = require('./routes/cards');
 const all = require('./routes/all');
 
-const {
-  PORT = 3000,
-} = process.env;
+const { PORT = 3000 } = process.env;
 
 const app = express();
 async function start() {
@@ -22,18 +23,11 @@ async function start() {
       console.log(`App successfully starting on port ${PORT}`);
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 }
-
-app.use((req, res, next) => {
-  req.user = {
-    _id: '5efb76e268da516e1c74caea', // вставьте сюда _id созданного в предыдущем пункте пользователя
-  };
-
-  next();
-});
-
+app.use(helmet());
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use('/', users);
 app.use('/', cards);
