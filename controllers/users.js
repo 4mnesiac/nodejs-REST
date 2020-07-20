@@ -1,10 +1,11 @@
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
 // eslint-disable-next-line import/no-dynamic-require
 const User = require(path.join('..', 'models', 'user'));
 const customError = new Error();
-const { NODE_ENV, JWT_SECRET, JWT_DEV_SECRET } = process.env;
+const { NODE_ENV, JWT_SECRET, JWT_DEV_SECRET = 'save-dev-and-enter' } = process.env;
 
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
@@ -68,33 +69,37 @@ module.exports.createUser = (req, res) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-  if (!password) {
+
+  if (password === '') {
     res.status(400).send({ message: 'user validation failed: password: Path `password` is required.' });
-  }
-  bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
-    .then(() => res.send({
-      message: `Пользователь ${name} успешно создан`,
-      data: {
+  } else {
+    bcrypt.hash(password, 10)
+      .then((hash) => User.create({
         name,
         about,
         avatar,
         email,
-      },
-    }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: err.message });
-      } else {
-        res.status(500).send({ message: err.message });
-      }
-    });
+        password: hash,
+      }))
+      .then(() => res.send({
+        message: `Пользователь ${name} успешно создан`,
+        data: {
+          name,
+          about,
+          avatar,
+          email,
+        },
+      }))
+      .catch((err) => {
+        if (err.errors.email && err.errors.email.properties.type === 'unique') {
+          res.status(409).send({ message: err.message });
+        } else if (err.name === 'ValidationError') {
+          res.status(400).send({ message: err.message });
+        } else {
+          res.status(500).send({ message: err.message });
+        }
+      });
+  }
 };
 
 module.exports.updateProfile = (req, res) => {
@@ -102,7 +107,7 @@ module.exports.updateProfile = (req, res) => {
 
   User.findByIdAndUpdate(
     userId,
-    { name: req.body.name },
+    { name: req.body.name, about: req.body.about },
     { new: true, runValidators: true },
   )
     .then((user) => {
@@ -114,8 +119,6 @@ module.exports.updateProfile = (req, res) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
-      } else if (err.name === 'CastError') {
-        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else {
         res.status(500).send({ message: err.message });
       }
@@ -139,8 +142,6 @@ module.exports.updateAvatar = (req, res) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
-      } else if (err.name === 'CastError') {
-        res.status(400).send({ message: `${err.name}: Ошибка запроса` });
       } else {
         res.status(500).send({ message: err.message });
       }

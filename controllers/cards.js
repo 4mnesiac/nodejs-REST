@@ -18,7 +18,7 @@ module.exports.deleteCard = (req, res) => {
       }
       return Card.findByIdAndRemove(req.params._id)
         .then(() => {
-          res.status(200).send({ message: `Карточка ${card._id} успешно удалена` });
+          res.status(200).send({ message: 'Карточка успешно удалена' });
         });
     })
     .catch((err) => {
@@ -30,7 +30,7 @@ module.exports.deleteCard = (req, res) => {
           res.status(404).send({ message: err.message });
           break;
         case 'AuthError':
-          res.status(401).send({ message: err.message });
+          res.status(403).send({ message: err.message });
           break;
         default:
           res.status(500).send({ message: err.message });
@@ -64,8 +64,6 @@ module.exports.createCard = (req, res) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: err.message });
-      } else if (err.name === 'AuthError') {
-        res.status(401).send({ message: err.message });
       } else {
         res.status(500).send({ message: err.message });
       }
