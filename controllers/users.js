@@ -70,7 +70,7 @@ module.exports.createUser = (req, res) => {
     name, about, avatar, email, password,
   } = req.body;
 
-  if (password === '') {
+  if (!password || password.length === 0) {
     res.status(400).send({ message: 'user validation failed: password: Path `password` is required.' });
   } else {
     bcrypt.hash(password, 10)
@@ -91,7 +91,7 @@ module.exports.createUser = (req, res) => {
         },
       }))
       .catch((err) => {
-        if (err.errors.email && err.errors.email.properties.type === 'unique') {
+        if (err.errors.email && err.errors.email.kind === 'unique') {
           res.status(409).send({ message: err.message });
         } else if (err.name === 'ValidationError') {
           res.status(400).send({ message: err.message });
@@ -112,7 +112,7 @@ module.exports.updateProfile = (req, res) => {
   )
     .then((user) => {
       res.status(200).send({
-        message: 'Имя обновлено',
+        message: 'Данные профиля обновлены',
         data: user,
       });
     })
